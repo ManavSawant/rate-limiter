@@ -1,5 +1,6 @@
 package com.manav.rate_limiter.service;
 
+import com.manav.rate_limiter.config.RateLimiterProperties;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.BucketConfiguration;
@@ -15,25 +16,24 @@ import java.time.Duration;
 public class RateLimiterService {
 
     private final ProxyManager<byte[]> proxyManager;
+    private final RateLimiterProperties properties;
 
     public Bucket resolveBucket(String key, String tier) {
-        Bandwidth limit;
+        RateLimiterProperties.Tier cfg =
+                "PREMIUM".equalsIgnoreCase(tier)
+                ? properties.getPremium()
+                : properties.getFree();
 
-        if("PREMIUM".equalsIgnoreCase(tier)){
-            limit = Bandwidth.builder()
-                    .capacity(100)
-                    .refillIntervally(100, Duration.ofMinutes(1))
-                    .build();
-        }else{
-            limit = Bandwidth.builder()
-                    .capacity(10)
-                    .refillIntervally(10, Duration.ofMinutes(1))
-                    .build();
-        }
+        Bandwidth limit = Bandwidth.builder()
+                .capacity(cfg.getCapacity())
+                .refillIntervally(cfg.getPerMinute(), Duration.ofMinutes(1))
+                .build();
+
         return proxyManager.builder()
-                .build(key.getBytes(StandardCharsets.UTF_8), () -> BucketConfiguration.builder()
-                        .addLimit(limit)
-                        .build());
+                .build(key.getBytes(StandardCharsets.UTF_8),
+                        ()-> BucketConfiguration.builder()
+                                .addLimit(limit)
+                                .build());
     }
 
 }

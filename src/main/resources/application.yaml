@@ -10,3 +10,10 @@ management:
     web:
       exposure:
         include: health,info,prometheus
+rate-limiter:
+  free:
+    capacity: 4
+    per-minute: 4
+  premium:
+    capacity: 100
+    per-minute: 100
